@@ -31,7 +31,63 @@ def generate_weights():
     return {"W1": W1, "b1": b1, "W2": W2, "b2": b2}
 
 
+# def softmax(W, b, x):
+#     """
+#     Softmax function.
+#     :param W: weights matrix
+#     :param b: bias vector
+#     :param x: example input
+#     :return: matrix of probabilities
+#     """
+#     numerator = np.exp(np.dot(W, x) + b)
+#     denominator = 0
+#
+#     for j in range(W.shape[0]):
+#         denominator += np.exp(W[j] * x + b[j])
+#
+#     return numerator / denominator
+
+
 def forward(x, activation_function, params):
+    W1, b1, W2, b2 = [params[key] for key in ('W1', 'b1', 'W2', 'b2')]
+    z1 = np.dot(W1, x) + b1
+    h1 = activation_function(z1)
+    z2 = np.dot(W2, h1) + b2
+    # TODO implement softmax in the z version
+    y_hat = softmax(z2)
+    ret = {'x': x, 'z1': z1, 'h1': h1, 'z2': z2, 'y_hat': y_hat}
+
+    # Add the values of params to the returned value.
+    for key in params:
+        ret[key] = params[key]
+    return ret
+
+
+def one_hot_vector(y, num_of_elements):
+    vector = np.zeros(num_of_elements, dtype=int)
+    vector[y] = 1
+    return vector
+
+
+def calculate_loss(y, y_hat):
+    y = one_hot_vector(y, 10)
+    loss = 0
+
+    for i in xrange(y.size):
+        loss += y[i] * np.log(y_hat[i])
+    return -loss
+
+
+def back_propagation(x, y, params, activation_function):
+    # TODO learn the back propagation algorithm
+    pass
+
+
+def update_weights_sgd(eta, params, activation_function):
+    pass
+
+
+def predict_on_validation(validation_set, params, activation_function):
     pass
 
 
@@ -42,7 +98,15 @@ def train(params, epochs, eta, activation_function, training_set, validation_set
         np.random.shuffle(training_set)
 
         for x, y in training_set:
-            y_hat = forward(x, activation_function, params)
+            forward_cache = forward(x, activation_function, params)
+            loss = calculate_loss(y, forward_cache["y_hat"])
+            sum_loss += loss
+            gradients = back_propagation(x, y, params, activation_function)
+            params = update_weights_sgd(eta, params, gradients)
+
+        validation_loss, accuracy = predict_on_validation(validation_set, params, activation_function)
+
+        print e, sum_loss / training_set[0].shape[0], validation_loss, "{}%".format(accuracy * 100)
 
 
 if __name__ == "__main__":
