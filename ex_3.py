@@ -11,49 +11,45 @@ def combine_examples(examples, labels):
     return paired_examples
 
 
-def create_weights_matrix(input_size, hidden_size):
-    pass
+def create_weights_matrix(rows, columns=1):
+    # TODO change the low and high values
+    weights_matrix = np.empty(shape=(rows, columns))
 
+    for row in xrange(rows):
+        weights_matrix[row, :] = np.random.uniform(-0.08, 0.08, columns)
 
-def create_bias_vector(hidden_size):
-    pass
+    return weights_matrix
 
 
 def generate_weights():
-    input_layer_size = 10
+    input_layer_size = 784
     hidden_layer_size = 50
-    output_layer_size = 784
+    output_layer_size = 10
     W1 = create_weights_matrix(hidden_layer_size, input_layer_size)
-    b1 = create_bias_vector(hidden_layer_size)
+    b1 = create_weights_matrix(hidden_layer_size)
     W2 = create_weights_matrix(output_layer_size, hidden_layer_size)
-    b2 = create_bias_vector(hidden_layer_size)
+    b2 = create_weights_matrix(hidden_layer_size)
 
     return {"W1": W1, "b1": b1, "W2": W2, "b2": b2}
 
 
-# def softmax(W, b, x):
-#     """
-#     Softmax function.
-#     :param W: weights matrix
-#     :param b: bias vector
-#     :param x: example input
-#     :return: matrix of probabilities
-#     """
-#     numerator = np.exp(np.dot(W, x) + b)
-#     denominator = 0
-#
-#     for j in range(W.shape[0]):
-#         denominator += np.exp(W[j] * x + b[j])
-#
-#     return numerator / denominator
+def softmax(x):
+    return (np.exp(x - np.amax(x))) / (np.sum(np.exp(x - np.amax(x))))
 
 
-def forward(x, activation_function, params):
+def sigmoid(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+def sigmoid_derivative(x):
+    return x * (1.0 - x)
+
+
+def forward_propagation(x, activation_function, params):
     W1, b1, W2, b2 = [params[key] for key in ('W1', 'b1', 'W2', 'b2')]
     z1 = np.dot(W1, x) + b1
     h1 = activation_function(z1)
     z2 = np.dot(W2, h1) + b2
-    # TODO implement softmax in the z version
     y_hat = softmax(z2)
     ret = {'x': x, 'z1': z1, 'h1': h1, 'z2': z2, 'y_hat': y_hat}
 
@@ -83,26 +79,40 @@ def back_propagation(x, y, params, activation_function):
     pass
 
 
-def update_weights_sgd(eta, params, activation_function):
+def update(eta, params, activation_function):
     pass
 
 
 def predict_on_validation(validation_set, params, activation_function):
-    pass
+    # TODO change variables names, and in general change the code structure
+    good = 0.0
+    sum_loss = 0.0
+
+    for x, y in validation_set:
+        forward_cache = forward_propagation(x, activation_function, params)
+        loss = calculate_loss(y, forward_cache["y_hat"])
+        sum_loss += loss
+
+        if np.argmax(forward_cache["y_hat"]) == y:
+            good += 1
+
+    accuracy = good / validation_set[0].shape[0]
+    average_loss = sum_loss / validation_set[0].shape[0]
+
+    return average_loss, accuracy
 
 
 def train(params, epochs, eta, activation_function, training_set, validation_set):
-
     for e in xrange(epochs):
         sum_loss = 0.0
         np.random.shuffle(training_set)
 
         for x, y in training_set:
-            forward_cache = forward(x, activation_function, params)
+            forward_cache = forward_propagation(x, activation_function, params)
             loss = calculate_loss(y, forward_cache["y_hat"])
             sum_loss += loss
             gradients = back_propagation(x, y, params, activation_function)
-            params = update_weights_sgd(eta, params, gradients)
+            params = update(eta, params, gradients)
 
         validation_loss, accuracy = predict_on_validation(validation_set, params, activation_function)
 
@@ -118,7 +128,7 @@ if __name__ == "__main__":
     # TODO delete this when submitting
     pickle_in = open("fast_data.txt", "rb").read()
     data = pickle.loads(pickle_in)
-    train_x = np.array(data[0])
+    train_x = np.array(data[0]) / 255.0
     train_y = np.array(data[1])
     test_x = np.array(data[2])
 
@@ -139,4 +149,5 @@ if __name__ == "__main__":
     # Initialize hyper-parameters.
     epochs = 30
     eta = 0.01
-    sigmoid = lambda x: 1 / (1 + np.exp(-x))
+
+    train(params, epochs, eta, sigmoid, training_set, validation_set)
