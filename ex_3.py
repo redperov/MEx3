@@ -1,20 +1,12 @@
 import numpy as np
-import pickle
 
 
 def main():
-    # TODO uncomment this when submitting
-    # train_x = np.loadtxt("train_x") / 255.0
-    # train_y = np.loadtxt("train_y")
-    # test_x = np.loadtxt("test_x") / 255.0
 
-    # TODO delete this when submitting
-    pickle_in = open("fast_data.txt", "rb").read()
-    data = pickle.loads(pickle_in)
-    train_x = np.array(data[0]) / 255.0
-    train_y = np.array(data[1])
-    # TODO maybe divide by 255. as well
-    test_x = np.array(data[2]) / 255.0
+    # Load the sets from the files, and normalize the image matrices.
+    train_x = np.loadtxt("train_x") / 255.0
+    train_y = np.loadtxt("train_y")
+    test_x = np.loadtxt("test_x") / 255.0
 
     # Combine examples and labels into tuples.
     paired_examples = combine_examples(train_x, train_y)
@@ -29,7 +21,7 @@ def main():
 
     # Initialize hyper-parameters.
     epochs = 30
-    eta = 0.005
+    eta = 0.01
     hidden_layer_size = 100
 
     # Generate initial weights.
@@ -195,7 +187,6 @@ def one_hot_vector(y, num_of_elements):
 
 
 def calculate_loss(y, y_hat):
-    # TODO maybe no need to use one hot vector, just do y*log(y_hat) instead of the sum
     """
     Calculates the loss.
     :param y: true label
@@ -222,7 +213,6 @@ def back_propagation(x, y, forward_cache, activation_function_derivative):
     W1, W2, h1, y_hat = [forward_cache[key] for key in ('W1', 'W2', 'h1', 'y_hat')]
 
     # Calculation of the dW2 and db2 gradients.
-    # TODO check if global is needed here
     dz2 = y_hat
     dz2[int(y)] -= 1
     dW2 = np.outer(dz2, h1.T)
@@ -255,7 +245,7 @@ def update(eta, forward_cache, gradients):
     return {"W2": W2, "b2": b2, "W1": W1, "b1": b1}
 
 
-def predict_on_validation(validation_set, params, activation_function):
+def predict(validation_set, params, activation_function):
     """
     Performs a prediction over the validation set.
     :param validation_set: validation set
@@ -263,19 +253,20 @@ def predict_on_validation(validation_set, params, activation_function):
     :param activation_function: activation function
     :return: average loss, accuracy
     """
-    # TODO change variables names, and in general change the code structure
     # Counts the number of times the classifier was correct.
     correct = 0.0
 
     # Sums the loss.
-    sum_loss = 0.0
+    loss_sum = 0.0
+
+    # Number of examples in the validation set.
     num_of_examples = validation_set.shape[0]
 
     # Go over the validation set, and check how accurate the classifier is.
     for x, y in validation_set:
         forward_cache = forward_propagation(x, activation_function, params)
         loss = calculate_loss(y, forward_cache["y_hat"])
-        sum_loss += loss
+        loss_sum += loss
 
         # Check if the classifier's output matches the correct label.
         if np.argmax(forward_cache["y_hat"]) == y:
@@ -285,7 +276,7 @@ def predict_on_validation(validation_set, params, activation_function):
     accuracy = correct / num_of_examples
 
     # Calculate the average loss.
-    average_loss = sum_loss / num_of_examples
+    average_loss = loss_sum / num_of_examples
 
     return average_loss, accuracy
 
@@ -305,6 +296,8 @@ def train_network(params, epochs, eta, activation_function, activation_function_
     """
     for e in xrange(epochs):
         sum_loss = 0.0
+
+        # Shuffle the training set.
         np.random.shuffle(training_set)
 
         for x, y in training_set:
@@ -323,7 +316,7 @@ def train_network(params, epochs, eta, activation_function, activation_function_
             params = update(eta, forward_cache, gradients)
 
         # Check the classifier over the validation set.
-        validation_loss, accuracy = predict_on_validation(validation_set, params, activation_function)
+        validation_loss, accuracy = predict(validation_set, params, activation_function)
 
         print "epoch: {0} train loss: {1} dev loss: {2} accuracy: {3}%".format(e, sum_loss / training_set.shape[0],
                                                                                validation_loss, accuracy * 100)
