@@ -6,7 +6,7 @@ def main():
     # TODO uncomment this when submitting
     # train_x = np.loadtxt("train_x") / 255.0
     # train_y = np.loadtxt("train_y")
-    # test_x = np.loadtxt("test_x")
+    # test_x = np.loadtxt("test_x") / 255.0
 
     # TODO delete this when submitting
     pickle_in = open("fast_data.txt", "rb").read()
@@ -29,7 +29,7 @@ def main():
 
     # Initialize hyper-parameters.
     epochs = 30
-    eta = 0.01
+    eta = 0.005
     hidden_layer_size = 100
 
     # Generate initial weights.
@@ -122,6 +122,42 @@ def sigmoid_derivative(x):
     :return: output
     """
     return x * (1.0 - x)
+
+
+def tanh(x):
+    """
+    Hyperbolic tangens function.
+    :param x: input
+    :return: output
+    """
+    return np.tanh(x)
+
+
+def tanh_derivative(x):
+    """
+    Hyperbolic tangens derivative.
+    :param x: input
+    :return: output
+    """
+    return 1 - (x ** 2)
+
+
+def relu(x):
+    """
+    ReLU function.
+    :param x: input
+    :return: output
+    """
+    return x * (x > 0)
+
+
+def relu_derivative(x):
+    """
+    ReLU derivative.
+    :param x: input
+    :return: output
+    """
+    return 1.0 * (x > 0)
 
 
 def forward_propagation(x, activation_function, params):
@@ -228,19 +264,27 @@ def predict_on_validation(validation_set, params, activation_function):
     :return: average loss, accuracy
     """
     # TODO change variables names, and in general change the code structure
+    # Counts the number of times the classifier was correct.
     correct = 0.0
+
+    # Sums the loss.
     sum_loss = 0.0
     num_of_examples = validation_set.shape[0]
 
+    # Go over the validation set, and check how accurate the classifier is.
     for x, y in validation_set:
         forward_cache = forward_propagation(x, activation_function, params)
         loss = calculate_loss(y, forward_cache["y_hat"])
         sum_loss += loss
 
+        # Check if the classifier's output matches the correct label.
         if np.argmax(forward_cache["y_hat"]) == y:
             correct += 1
 
+    # Calculate the accuracy of the classifier.
     accuracy = correct / num_of_examples
+
+    # Calculate the average loss.
     average_loss = sum_loss / num_of_examples
 
     return average_loss, accuracy
@@ -264,12 +308,21 @@ def train_network(params, epochs, eta, activation_function, activation_function_
         np.random.shuffle(training_set)
 
         for x, y in training_set:
+
+            # Perform forward propagation.
             forward_cache = forward_propagation(x, activation_function, params)
+
+            # Calculate the loss.
             loss = calculate_loss(y, forward_cache["y_hat"])
             sum_loss += loss
+
+            # Perform back propagation.
             gradients = back_propagation(x, y, forward_cache, activation_function_derivative)
+
+            # Update the weights.
             params = update(eta, forward_cache, gradients)
 
+        # Check the classifier over the validation set.
         validation_loss, accuracy = predict_on_validation(validation_set, params, activation_function)
 
         print "epoch: {0} train loss: {1} dev loss: {2} accuracy: {3}%".format(e, sum_loss / training_set.shape[0],
